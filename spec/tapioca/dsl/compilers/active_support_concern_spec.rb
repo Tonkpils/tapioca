@@ -231,6 +231,44 @@ module Tapioca
               )
             end
 
+            it "does things right" do
+              add_ruby_file("test_case.rb", <<~RUBY)
+                module Foo
+                  extend T::Helpers
+
+                  module ClassMethods
+                  end
+
+                  mixes_in_class_methods(ClassMethods)
+                end
+
+                module Bar
+                  extend ActiveSupport::Concern
+
+                  include Foo
+                end
+
+                module Baz
+                  extend ActiveSupport::Concern
+
+                  include Bar
+                end
+
+                class Quux
+                  include Bar
+                end
+              RUBY
+
+              expected_bar = <<~RUBY
+                # typed: strong
+
+                module Baz
+                  mixes_in_class_methods ::Foo::ClassMethdos
+                end
+              RUBY
+              assert_equal(expected_bar, rbi_for(:Baz))
+            end
+
             it "generates RBI for many nested mixins" do
               add_ruby_file("test_case.rb", <<~RUBY)
                 module Foo
